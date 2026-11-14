@@ -93,26 +93,13 @@ Output of `npm test`:
 
 ## Bonus 3: Explain your reducer
 
-**Why pure.** React decides whether to re-render by comparing the old and new state by reference. If the
-reducer changed the old array in place (for example with `push`) and returned it, the reference would be the
-same, React would think nothing changed and the screen would not update. Mutation also breaks anything that
-keeps old states, like my undo history: the "old" lists in `past` would silently change too. In Strict Mode
-React calls the reducer twice in development, so a reducer with side effects would also run them twice.
+**Why pure.** React decides if anything changed with checking old and new states by reference (old === new). If it change the old array in place and return it, the reference would be the same and it would think nothing has changed. About the mutation, React only check for the state reference, so if we mutate something, it will change the state content, but not the reference, so the comp wouldn't be changed.
 
-**Why the caller creates the id.** `crypto.randomUUID()` returns a different value every call, so a reducer
-that called it would give different results for the same state and action. That makes it impure, hard to
-test (I could not write `expect(...).toEqual(...)` for an added task), and under Strict Mode's double call
-the two runs would create two different ids. The event handler is the right place for side effects; the
-action just carries the id.
+**Why the caller creates the id.** `randomUUID` returns a different unique value every call, so if we put it for both caller and reducer, first, it will create an unique id for the input, and another unique id for the output, because of that, they both would be different and if we call it two times with same state and action, it would give us two different result. Reducer must be a pure basic function, it should give the same output for every same input.
 
-**Why derived, not stored.** The filtered list and the counts are fully determined by `tasks` and `filter`,
-so storing them creates a second copy that must be kept in sync by hand. For example, if `filteredTasks` were
-stored and I forgot to update it in `advance`, a task moved to Done would stay visible under the To do filter,
-and the counts would be stale after a delete. Computing them while rendering makes that bug impossible.
+**Why derived, not stored.** Let me explain this with a simple example. For example, if we know the birth of mine and today's date, we can calculate my age instead of using another variable like `age`, because if we do that, we should keep the `age` up to date everytime, and it creates unnecessary dependency, they call that `single source of truth`, if we compute everything from minimal variable as we can, it would help us to avoid for the next unforgivable mistakes/bugs. In our case, the filtered list and the counts can be computed from `tasks` and `filter`. If we store them, the exactly same information would live in two different place and we would keep them in sync for every move and for example if we forgot to update `filteredTasks`, a task moved to Done would still be under `To do`.
 
-**Filter in the reducer.** It became easier to write `clearDone` and undo correctly: one reducer sees the
-whole state, so undo can restore the tasks and deliberately keep the filter. It became a bit harder in that
-every task case now has to copy the state with `{ ...state, tasks }` instead of just returning an array.
+**Filter in the reducer.** One reducer whould see the whole state, so it became easier to write `clearDone`, but because of that, every task case now has to copy that state again and again instead of just returning the array.
 
 ## Bonus 4: Git repository
 
